@@ -1,6 +1,7 @@
 #!/usr/local/bin/julia
 
-using Twitter, OAuth, CSV, Dates, DataFrames, Random, StatsBase
+using Twitter, CSV, Dates, DataFrames, StatsBase, JSON
+import Twitter.get_oauth, Twitter.Users
 
 # the functions
 
@@ -119,10 +120,30 @@ end
 
 """
    Dev helper function: get all usernames from a twitter list
+   This is a kludge to replace Twitter.get_lists_members, which misreads the json data
+"""
+function myget_lists_members(;kwargs...)
+   options = Dict{String, Any}()
+   for arg in kwargs
+       options[string(arg[1])] = string(arg[2])
+   end
+   cur_alloc = reconnect("lists/members.json") # start reconnect loop
+   r = get_oauth("https://api.twitter.com/1.1/lists/members.json", options)
+   if r.status == 200
+       success = JSON.parse(String(r.body))
+       return(Users(success["users"]))
+   else
+       error("Twitter API returned $(r.status) status")
+   end
+end
+
+
+"""
+   Dev helper function: get all usernames from a twitter list
 """
 function extract_list_uns(list_id)
-    subs = get_lists_members(list_id=list_id, count=10000)
-    subs
+    subs = myget_lists_members(list_id=list_id, count=10000, skip_status=true)
+    [s.screen_name for s in subs]
 end
 
 
@@ -132,16 +153,17 @@ end
   cd(hd*"/repo/CausalBot")
 
 ############################################ authorization ###############################
-  include("private_keys.txt"); # keys + vips list + banned user list
+  include("private_keys.txt"); # keys + speciallist + vips/vivips/lvips/bans lists
   auth_dictionary = twitterauth(ak, ask, at, ats);
 
 ################################## hashtags to retweet ###################################
-  hashlist = ["#CausalTwitter", "#causal", "#causalinference", "#causalinf"];
+  #hashlist = ["#CausalTwitter", "#causal", "#causalinference", "#causalinf"]; # too many links to misspelled "casual" tags
+  hashlist = ["#CausalTwitter", "#causalinference", "#causalml", "causality"];
 
 ############################################ misc ########################################
   #checktweets = get_search_tweets(q = hashlist[1], count = 1000)
   #rolltweets(special, checktweets)
-  #extract_list_uns(speciallist)
+  vips = sort(unique(vcat(vips, extract_list_uns(speciallist))));
 
 ################################## all of my tweets, retweets ############################
   myids = get_my_ids(un);
@@ -152,16 +174,16 @@ end
   okindex = hard_filter_tweets(causaltweets; bans=bans, allowretweets=false);
   yesindex = soft_filter_tweets(causaltweets, okindex; maxtweets=5, vips=vips, vivips=vivips, lvips=lvips);
   
-  # if desperate, pull randomly from another related hashtag
-  if length(yesindex)==0
-    causaltweets = get_search_tweets(q = rand(hashlist[2:end]), count = 10000)
+  # if desperate, pull randomly from another related hashtag on occasion
+  if (length(yesindex)==0 && rand()>0.7)
+    causaltweets = get_search_tweets(q = rand(hashlist[2:end]), count = 200)
     okindex = hard_filter_tweets(causaltweets; bans=bans, allowretweets=false);
-    yesindex = soft_filter_tweets(causaltweets, okindex; maxtweets=2, vips=vips, vivips=vivips, lvips=lvips);
+    yesindex = soft_filter_tweets(causaltweets, okindex; maxtweets=1, vips=vips, vivips=vivips, lvips=lvips);
   end
   
 ################################### retweet, if any ######################################
   if length(yesindex)>0
-    retweet!(myids, causaltweets, yesindex, fake=false)
+    retweet!(myids, causaltweets, yesindex, fake=true)
     CSV.write("pasttweets.csv", DataFrame(myids=myids));
   end
 
