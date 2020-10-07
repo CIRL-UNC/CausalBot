@@ -20,6 +20,10 @@ function real_retweet!(myids, tweet)
   try
     post_status_retweet_id(newid)
   catch err
+     # unclear why this is needed, but error happens if I had already retweeted
+     # and somehow didn't catch it through other means
+     # this will just assume a 403 error means I should add to the list of 
+     # retweets
      myids  = err.response.status == 403 ? vcat(newid, myids) : myids
   end
 end
@@ -49,12 +53,12 @@ end
 """
    Filter out tweets that will be skipped
 """
-function hard_filter_tweets(collection; bans=[])
+function hard_filter_tweets(collection; bans=[], allowretweets=true)
   idx = []
   for (i,tweet) in enumerate(collection["statuses"])
     #
     Iretweeted = any(tweet.id_str .== myids) ? true : false
-    newtweet = (isnothing(tweet.retweeted_status) && (first_two_chars(tweet.text) != "RT")) 
+    newtweet = allowretweets || (isnothing(tweet.retweeted_status) && (first_two_chars(tweet.text) != "RT")) 
     isbanned = any(tweet.user["screen_name"] .== bans)
     idx = (Iretweeted | !newtweet | isbanned) ? idx : vcat(idx,i)
   end
@@ -62,7 +66,7 @@ function hard_filter_tweets(collection; bans=[])
 end
 
 """
-   Sample from eligible tweets
+   Sample from eligible tweets, sampling based on VIP status
 """
 function soft_filter_tweets(collection, okindex; maxtweets=5, vips=[], vivips=[], lvips=[])
   length(okindex)==0 && return okindex
@@ -92,7 +96,7 @@ function retweet!(myids,collection,yesindex;maxtweets=5, fake=false)
 end 
 
 """
-   Dev helper function
+   Dev helper function: collect all tweets from a user in the queue
 """
 function rolltweets(uid,collection)
     for tweet in collection["statuses"]
@@ -100,14 +104,22 @@ function rolltweets(uid,collection)
     end
 end
 
-
 """
-   Dev helper function
+   Dev helper function: in progress
 """
 function collect_mentions(id_str)
   for tweet in collection["statuses"]
     break
   end
+end
+
+
+"""
+   Dev helper function: get all usernames from a twitter list
+"""
+function extract_list_uns(list_id)
+    listraw = get_lists_show(list_id=speciallist)
+    subs = get_lists_members(list_id=listraw.id, slug=listraw.slug, count=10000)
 end
 
 
@@ -125,9 +137,8 @@ end
 
 ############################################ misc ########################################
   #checktweets = get_search_tweets(q = hashlist[1], count = 1000)
-
   #rolltweets(special, checktweets)
-
+  #extract_list_uns(speciallist)
 
 ################################## all of my tweets, retweets ############################
   myids = get_my_ids(un);
@@ -135,20 +146,21 @@ end
 
 ################################## select recent tweets ##################################
   causaltweets = get_search_tweets(q = hashlist[1], count = 10000)
-  okindex = hard_filter_tweets(causaltweets; bans=bans);
+  okindex = hard_filter_tweets(causaltweets; bans=bans, allowretweets=false);
   yesindex = soft_filter_tweets(causaltweets, okindex; maxtweets=5, vips=vips, vivips=vivips, lvips=lvips);
   
   # if desperate, pull randomly from another related hashtag
   if length(yesindex)==0
-    causaltweets = get_search_tweets(q = rand(hashlist[2:end]), count = 500)
-    okindex = hard_filter_tweets(causaltweets; bans=bans);
+    causaltweets = get_search_tweets(q = rand(hashlist[2:end]), count = 10000)
+    okindex = hard_filter_tweets(causaltweets; bans=bans, allowretweets=false);
     yesindex = soft_filter_tweets(causaltweets, okindex; maxtweets=2, vips=vips, vivips=vivips, lvips=lvips);
   end
   
 ################################### retweet, if any ######################################
-  retweet!(myids, causaltweets, yesindex, fake=false)
+  if length(yesindex)>0
+    retweet!(myids, causaltweets, yesindex, fake=false)
+    CSV.write("pasttweets.csv", DataFrame(myids=myids));
+  end
 
-################################## remember old retweets #################################
-  CSV.write("pasttweets.csv", DataFrame(myids=myids));
 
 println(Dates.now())
