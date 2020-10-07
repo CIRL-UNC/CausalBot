@@ -7,15 +7,21 @@ using Twitter, OAuth, CSV, Dates, DataFrames, Random, StatsBase
 """
    Spoof a re-tweet and print to stdout. For testing.
 """
-function fake_retweet(tweet)
+function fake_retweet!(myids, tweet)
   println(tweet.text * " - " * tweet.user["screen_name"])
+  myids = myids
 end
 
 """
-   Send out a real re-tweet
+   Send out a real re-tweet, catching some old RT that were missed
 """
-function real_retweet(tweet)
-  post_status_retweet_id(tweet.id_str)
+function real_retweet!(myids, tweet)
+  newid = tweet.id_str
+  try
+    post_status_retweet_id(newid)
+  catch err
+     myids  = err.response.status == 403 ? vcat(newid, myids) : myids
+  end
 end
 
 
@@ -31,6 +37,16 @@ function get_my_ids(un;fn = "pasttweets.csv")
 end
 
 """
+   Handle non-ascii text graciously when indexing text of a Tweet
+   s = "¿Según"
+   first_two_chars(s)
+   # s[1:2] # does not work
+"""
+function first_two_chars(str)
+  str[nextind(str, 0):nextind(str, 1)]
+end
+
+"""
    Filter out tweets that will be skipped
 """
 function hard_filter_tweets(collection; bans=[])
@@ -38,7 +54,7 @@ function hard_filter_tweets(collection; bans=[])
   for (i,tweet) in enumerate(collection["statuses"])
     #
     Iretweeted = any(tweet.id_str .== myids) ? true : false
-    newtweet = (isnothing(tweet.retweeted_status) && (tweet.text[1:2] != "RT")) # revisit
+    newtweet = (isnothing(tweet.retweeted_status) && (first_two_chars(tweet.text) != "RT")) 
     isbanned = any(tweet.user["screen_name"] .== bans)
     idx = (Iretweeted | !newtweet | isbanned) ? idx : vcat(idx,i)
   end
@@ -70,7 +86,7 @@ function retweet!(myids,collection,yesindex;maxtweets=5, fake=false)
   length(okindex)==0 && return okindex
   order = rand(yesindex, length(yesindex))
   for tweet in collection["statuses"][order]
-    fake ? fake_retweet(tweet) : real_retweet(tweet)
+    fake ? fake_retweet!(myids, tweet) : real_retweet!(myids, tweet)
     myids = fake ? myids : vcat(myids, tweet.id_str)
   end
 end 
@@ -118,7 +134,7 @@ end
 
 
 ################################## select recent tweets ##################################
-  causaltweets = get_search_tweets(q = hashlist[1], count = 500)
+  causaltweets = get_search_tweets(q = hashlist[1], count = 10000)
   okindex = hard_filter_tweets(causaltweets; bans=bans);
   yesindex = soft_filter_tweets(causaltweets, okindex; maxtweets=5, vips=vips, vivips=vivips, lvips=lvips);
   
