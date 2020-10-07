@@ -67,6 +67,9 @@ end
 
 """
    Sample from eligible tweets, sampling based on VIP status
+   NOTE: VIP status is based on Twitter users currently being amplified
+     and NOT necessarily popular users. VIP lists are private but can be 
+     obtained for auditing purposes by a DM to @PronouncedKeil
 """
 function soft_filter_tweets(collection, okindex; maxtweets=5, vips=[], vivips=[], lvips=[])
   length(okindex)==0 && return okindex
@@ -91,7 +94,7 @@ function retweet!(myids,collection,yesindex;maxtweets=5, fake=false)
   order = rand(yesindex, length(yesindex))
   for tweet in collection["statuses"][order]
     fake ? fake_retweet!(myids, tweet) : real_retweet!(myids, tweet)
-    myids = fake ? myids : vcat(myids, tweet.id_str)
+    myids = fake ? myids : vcat(tweet.id_str, myids)
   end
 end 
 
@@ -107,7 +110,7 @@ end
 """
    Dev helper function: in progress
 """
-function collect_mentions(id_str)
+function collect_mentions(id_str, collection)
   for tweet in collection["statuses"]
     break
   end
@@ -118,8 +121,8 @@ end
    Dev helper function: get all usernames from a twitter list
 """
 function extract_list_uns(list_id)
-    listraw = get_lists_show(list_id=speciallist)
-    subs = get_lists_members(list_id=listraw.id, slug=listraw.slug, count=10000)
+    subs = get_lists_members(list_id=list_id, count=10000)
+    subs
 end
 
 
