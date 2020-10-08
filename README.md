@@ -7,3 +7,5 @@ Written in <img src="https://julialang.org/assets/infra/logo.svg" width="50"/>, 
 
 **Please help train me!**
 If you think of a way to promote open discussion and support inclusiveness for all voices, please send a Twitter direct message to @CausalInferBot, and we can change the way CausalBot responds.
+
+![](swig_banner.jpg)
