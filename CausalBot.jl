@@ -7,6 +7,7 @@ import Twitter.get_oauth, Twitter.Users
 
 """
    Spoof a re-tweet and print to stdout. For testing.
+   Pass-through myids without modifying
 """
 function fake_retweet!(myids, tweet)
   println(tweet.text * " - " * tweet.user["screen_name"])
@@ -15,6 +16,7 @@ end
 
 """
    Send out a real re-tweet, catching some old RT that were missed
+   Updates myids with any tweet
 """
 function real_retweet!(myids, tweet)
   newid = tweet.id_str
@@ -119,7 +121,7 @@ end
 
 
 """
-   Dev helper function: get all usernames from a twitter list
+   Dev helper function: get all user info from a twitter list
    This is a kludge to replace Twitter.get_lists_members, which misreads the json data
 """
 function myget_lists_members(;kwargs...)
@@ -137,6 +139,36 @@ function myget_lists_members(;kwargs...)
    end
 end
 
+"""
+   Dev helper function: get user id from a CSV list of tweet ids
+"""
+function get_statuses_lookup(;kwargs...)
+   options = Dict{String, Any}()
+   for arg in kwargs
+       options[string(arg[1])] = string(arg[2])
+   end
+   cur_alloc = reconnect("lists/members.json") # start reconnect loop
+   r = get_oauth("https://api.twitter.com/1.1/statuses/lookup.json", options)
+   if r.status == 200
+       success = JSON.parse(String(r.body))
+       users = [s["user"] for s in success]
+       return(Users(users))
+   else
+       error("Twitter API returned $(r.status) status")
+   end
+end
+
+"""
+   Dev helper function: get user id for a CSV list of tweet ids
+   NOTE: this is to keep track of tweets per user and throttle
+     spammers automatically, if necessary. Only numeric ids are 
+     stored on a private computer.
+"""
+function write_user_ids(ids, path="private_users.csv")
+  res = get_statuses_lookup(id = join(ids, ","))
+  uids = vcat([r.id for r in res])
+  CSV.write(path, DataFrame(id=uids,time=today()), append=true);
+end
 
 """
    Dev helper function: get all usernames from a twitter list
@@ -145,7 +177,6 @@ function extract_list_uns(list_id)
     subs = myget_lists_members(list_id=list_id, count=10000, skip_status=true)
     [s.screen_name for s in subs]
 end
-
 
 
 ############################################ prelims #####################################
@@ -158,16 +189,16 @@ end
 
 ################################## hashtags to retweet ###################################
   #hashlist = ["#CausalTwitter", "#causal", "#causalinference", "#causalinf"]; # too many links to misspelled "casual" tags
-  hashlist = ["#CausalTwitter", "#causalinference", "#causalml", "causality"];
+  hashlist = ["#CausalTwitter", "#causalinference","#causality"];
 
 ############################################ misc ########################################
   #checktweets = get_search_tweets(q = hashlist[1], count = 1000)
   #rolltweets(special, checktweets)
   vips = sort(unique(vcat(vips, extract_list_uns(speciallist))));
 
-################################## all of my tweets, retweets ############################
+####################### all of my tweets, retweets, followers ############################
   myids = get_my_ids(un);
-
+  nfollowers = get_users_show(user_id="1313480760809136129").followers_count
 
 ################################## select recent tweets ##################################
   causaltweets = get_search_tweets(q = hashlist[1], count = 10000)
@@ -178,14 +209,20 @@ end
   if (length(yesindex)==0 && rand()>0.7)
     causaltweets = get_search_tweets(q = rand(hashlist[2:end]), count = 200)
     okindex = hard_filter_tweets(causaltweets; bans=bans, allowretweets=false);
-    yesindex = soft_filter_tweets(causaltweets, okindex; maxtweets=1, vips=vips, vivips=vivips, lvips=lvips);
+    yesindex = soft_filter_tweets(causaltweets, okindex; maxtweets=2, vips=vips, vivips=vivips, lvips=lvips);
   end
   
 ################################### retweet, if any ######################################
   if length(yesindex)>0
-    retweet!(myids, causaltweets, yesindex, fake=true)
+    newids = [tweet.id_str for tweet in causaltweets["statuses"][yesindex]]
+    write_user_ids(newids, "private_users.csv")
+    retweet!(myids, causaltweets, yesindex, fake=false)
     CSV.write("pasttweets.csv", DataFrame(myids=myids));
   end
 
-
-println(Dates.now())
+########################## record current number of followers ############################
+  now =  string(Dates.now())
+  open("private_followcount.csv", "a") do io
+    println(io,now[1:10]*","*now[12:end]*","*string(nfollowers))
+  end
+  println(now)
