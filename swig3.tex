@@ -1,0 +1,48 @@
+%example of a SWIG
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass{article}
+\usepackage{verbatim}
+\usepackage{tikz}
+%nice font
+\usepackage[default]{sourcesanspro}
+\usepackage[T1]{fontenc}
+\usepackage{bm}
+\usepackage{color}
+
+\usepackage[paperwidth=6in,paperheight=3in,left=.3in,top=.3in,right=.3in,bottom=.3in]{geometry}
+
+%list of libraries at http://tex.stackexchange.com/questions/42611/list-of-available-tikz-libraries-with-a-short-introduction
+\usetikzlibrary{mindmap,backgrounds, snakes, shapes, positioning}
+\newcommand{\seq}{\,{=}\,} % special equals (
+
+\newcommand{\mndim}{0.9cm}
+\newcommand{\ndist}{1.0cm}
+\newcommand{\ndistb}{0.9cm}
+
+%custom node style
+\tikzstyle{leftsplit} = [semicircle, shape border rotate=90, anchor=east,           inner xsep=1pt,  minimum height=\mndim, minimum width=\mndim, very thick, draw]
+\tikzstyle{rightsplit} = [semicircle, shape border rotate=270, anchor=west,      inner xsep=1pt,  minimum height=\mndim, minimum width=\mndim, very thick, draw]
+\tikzstyle{topsplit} = [semicircle, shape border rotate=0, anchor=south,          inner ysep=1pt,  minimum height=\mndim, minimum width=\mndim, very thick, draw]
+\tikzstyle{bottomsplit} = [semicircle, shape border rotate=180, anchor=north, inner ysep=1pt,  minimum height=\mndim, minimum width=\mndim, very thick, draw]
+
+\tikzstyle{swignode} = [ellipse, inner sep=1pt,  minimum height=\mndim, minimum width=\mndim, very thick, draw]
+\tikzstyle{swigbox} = [rectangle, inner sep=1pt,  minimum height=\mndim, minimum width=\mndim, very thick, draw]
+
+
+\begin{document}
+\begin{tikzpicture}[node distance=\ndist, very thick]
+     \node[leftsplit] (X) {$\bm{X}$};
+     \node[red, rightsplit, right = of X, xshift=-\ndistb] (x) {$\bm{ x}$};
+     \node[swignode, above right= of x](z){$\bm{ Z }$};
+     \node[swignode, below right = of z](y){$\bm{ Y({\color{red} x_1}) }$};
+    
+   \path  [latex-,shorten <= .05cm, shorten >= .05cm] (z) edge[] (X); %-latex gives arrow head shape
+   \path  [-stealth,shorten <= .05cm, shorten >= .05cm] (z) edge (y); %stealth gives arrow head shape (others: angle 60, stealth', latex, latex')
+   \path  [-latex,shorten <= .05cm, shorten >= .05cm] (x) edge (y);
+   \path  [-latex] (u) edge[out=0, in=-90] (y2);    ;
+  
+
+\end{tikzpicture}
+
+\end{document}
