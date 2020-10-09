@@ -9,5 +9,3 @@ Written in <img src="https://julialang.org/assets/infra/logo.svg" width="50"/>, 
 If you think of a way to promote open discussion and support inclusiveness for all voices, please send a Twitter direct message to @CausalInferBot, and we can change the way CausalBot responds.
 
 ![](swig_banner.jpg)
-
-<a class="twitter-timeline" href="https://twitter.com/CausalInferBot?ref_src=twsrc%5Etfw">Tweets by CausalInferBot</a> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script> 
