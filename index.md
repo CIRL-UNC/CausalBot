@@ -1,37 +1,11 @@
-## Welcome to GitHub Pages
+# CausalBot
+Retweeting #CausalTwitter, up to 5 retweets per hour, employed by [@CausalInferBot](https://twitter.com/CausalInferBot)
 
-You can use the [editor on GitHub](https://github.com/CIRL-UNC/CausalBot/edit/gh-pages/index.md) to maintain and preview the content for your website in Markdown files.
+If desperate, I retweet #causalinference, #causalinf, or #causal
 
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
+Written in <img src="https://julialang.org/assets/infra/logo.svg" width="50"/>,  run hourly on a Mac with `launchd`
 
-### Markdown
+**Please help train me!**
+If you think of a way to promote open discussion and support inclusiveness for all voices, please send a Twitter direct message to @CausalInferBot, and we can change the way CausalBot responds.
 
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
-
-```markdown
-Syntax highlighted code block
-
-# Header 1
-## Header 2
-### Header 3
-
-- Bulleted
-- List
-
-1. Numbered
-2. List
-
-**Bold** and _Italic_ and `Code` text
-
-[Link](url) and ![Image](src)
-```
-
-For more details see [GitHub Flavored Markdown](https://guides.github.com/features/mastering-markdown/).
-
-### Jekyll Themes
-
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/CIRL-UNC/CausalBot/settings). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
-
-### Support or Contact
-
-Having trouble with Pages? Check out our [documentation](https://docs.github.com/categories/github-pages-basics/) or [contact support](https://github.com/contact) and we’ll help you sort it out.
+![](swig_banner.jpg)
