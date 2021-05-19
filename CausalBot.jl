@@ -1,5 +1,6 @@
 #!/usr/local/bin/julia
-
+# need to install Twitter via:
+# using Pkg; Pkg.add(url="https://github.com/alexpkeil1/Twitter.jl")
 using Twitter, CSV, Dates, DataFrames, StatsBase, JSON
 import Twitter.get_oauth, Twitter.Users
 
@@ -189,7 +190,7 @@ end
 
 ################################## hashtags to retweet ###################################
   #hashlist = ["#CausalTwitter", "#causal", "#causalinference", "#causalinf"]; # too many links to misspelled "casual" tags
-  hashlist = ["#CausalTwitter", "#causalinference","#causality"];
+  hashlist = ["#CausalTwitter", "#causalinference"];
 
 ############################################ misc ########################################
   #checktweets = get_search_tweets(q = hashlist[1], count = 1000)
@@ -206,7 +207,7 @@ end
   yesindex = soft_filter_tweets(causaltweets, okindex; maxtweets=5, vips=vips, vivips=vivips, lvips=lvips);
   
   # if desperate, pull randomly from another related hashtag on occasion
-  if (length(yesindex)==0 && rand()>0.7)
+  if (length(yesindex)==0 && rand()>0.85)
     causaltweets = get_search_tweets(q = rand(hashlist[2:end]), count = 200)
     okindex = hard_filter_tweets(causaltweets; bans=bans, allowretweets=false);
     yesindex = soft_filter_tweets(causaltweets, okindex; maxtweets=2, vips=vips, vivips=vivips, lvips=lvips);
