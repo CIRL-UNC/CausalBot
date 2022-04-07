@@ -54,6 +54,33 @@ function first_two_chars(str)
   str[nextind(str, 0):nextind(str, 1)]
 end
 
+
+"""
+   Define spammy hashtag behavior 
+"""
+function hashspampolice(hashes; threshold=8)
+  indices =  [j for i in hashes for j in i["indices"]]
+  starthash = indices[1]==0          # does this start off with a hashtag?
+  seqhash = sum(diff(indices) .== 1) # number of sequential hashtags
+  hashspam = (starthash & (seqhash>=2)) | (seqhash >= threshold)
+  hashspam
+end
+
+
+
+"""
+   Check if this is from a hashtag spammer
+"""
+function is_hash_spam(tweet)
+   hashes = tweet.entities["hashtags"]
+   if isnothing(hashes) | (length(hashes) == 1)
+     return(false)
+   else
+     return(hashspampolice(hashes))
+   end
+end
+
+
 """
    Filter out tweets that will be skipped
 """
@@ -64,7 +91,8 @@ function hard_filter_tweets(collection; bans=[], allowretweets=true)
     Iretweeted = any(tweet.id_str .== myids) ? true : false
     newtweet = allowretweets || (isnothing(tweet.retweeted_status) && (first_two_chars(tweet.text) != "RT")) 
     isbanned = any(tweet.user["screen_name"] .== bans)
-    idx = (Iretweeted | !newtweet | isbanned) ? idx : vcat(idx,i)
+    isgross = is_hash_spam(tweet)
+    idx = (Iretweeted | !newtweet | isbanned | isgross) ? idx : vcat(idx,i)
   end
   idx
 end
