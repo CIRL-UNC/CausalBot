@@ -73,7 +73,7 @@ end
 """
 function is_hash_spam(tweet)
    hashes = tweet.entities["hashtags"]
-   if isnothing(hashes) | (length(hashes) == 1)
+   if isnothing(hashes) || (length(hashes) <= 2)
      return(false)
    else
      return(hashspampolice(hashes))
